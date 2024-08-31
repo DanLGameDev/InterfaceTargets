@@ -7,7 +7,7 @@ namespace DGP.InterfaceTargets
     [Serializable]
     public class InterfaceTarget<TInterface>
     {
-        [ValidateInput(nameof(ValidateInput))][InlineEditor]
+        [ValidateInput(nameof(ValidateInput))]
         [SerializeField] private Component target;
         public Component TargetComponent => target;
         public TInterface Target => GetTargetOrNull();
