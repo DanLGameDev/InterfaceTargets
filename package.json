@@ -1,0 +1,11 @@
+{
+  "name": "dgp.interfacetargets",
+  "version": "1.0.6",
+  "displayName": "Interface Targets",
+  "description": "",
+  "unity": "2019.1",
+  "author": {
+    "name": "Daniel Loughmiller",
+    "url": "https://github.com/DanLGameDev/"
+  }
+}
