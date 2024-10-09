@@ -4,16 +4,18 @@ using UnityEngine;
 namespace DGP.InterfaceTargets
 {
     [Serializable]
-    public class InterfaceTarget<TInterface> where TInterface : class
+    public class InterfaceTarget<TInterface> : ISerializationCallbackReceiver where TInterface : class
     {
         [SerializeField] private Component target;
+        [SerializeField] private bool isValid;
+        
+        [NonSerialized] private TInterface _cachedInterface;
         
         public Component TargetComponent => target;
         public TInterface Target => GetCachedTarget();
         
-        private TInterface _cachedInterface;
         
-        public static implicit operator TInterface(InterfaceTarget<TInterface> target) => target.Target; 
+        public static implicit operator TInterface(InterfaceTarget<TInterface> field) => field.Target; 
         
         public bool TryGetTarget(out TInterface targetInterface) {
             targetInterface = GetCachedTarget();
@@ -50,6 +52,12 @@ namespace DGP.InterfaceTargets
                 target = component as Component;
         }
 
-        
+        public void OnBeforeSerialize() {
+            
+        }
+
+        public void OnAfterDeserialize() {
+            
+        }
     }
 }

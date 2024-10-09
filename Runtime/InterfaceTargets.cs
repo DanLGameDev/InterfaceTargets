@@ -10,6 +10,8 @@ namespace DGP.InterfaceTargets
         [SerializeField] private List<Component> targetComponents = new List<Component>();
 
         private List<TInterface> _cachedComponents;
+
+        private bool _isValid;
         
         public int Count => targetComponents.Count;
         public IReadOnlyList<Component> TargetComponents => targetComponents;

@@ -1,5 +1,9 @@
 # Changelog
 
+## [1.1.1] - 2024-10-09
+### Changes
+- Misc changes/code formatting
+
 ## [1.1.0] - 2024-10-08
 ### Changes
 - Removed Odin Inspector dependency
