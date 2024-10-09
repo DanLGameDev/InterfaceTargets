@@ -1,50 +1,64 @@
 using System;
 using System.Collections.Generic;
-using Sirenix.OdinInspector;
 using UnityEngine;
 
 namespace DGP.InterfaceTargets
 {
     [Serializable]
-    public class InterfaceTargets<TInterface>
+    public class InterfaceTargets<TInterface> where TInterface : class
     {
-        [ValidateInput(nameof(ValidateInput))]
-        [SerializeField] private List<Component> targetEmitters = new();
-        
-        private List<TInterface> cachedComponents;
-        
-        public int Count => targetEmitters.Count;
-        
-        public IReadOnlyList<Component> TargetComponents => targetEmitters;
-        public List<TInterface> Targets
-        {
-            get {
-                if (cachedComponents == null)
-                    cachedComponents = new List<TInterface>();
-                
-                if (cachedComponents.Count != targetEmitters.Count) {
-                    cachedComponents.Clear();
-                    foreach (var target in targetEmitters) {
-                        cachedComponents.Add(target.GetComponent<TInterface>());
-                    }
-                }
+        [SerializeField] private List<Component> targetComponents = new List<Component>();
 
-                return cachedComponents;
+        private List<TInterface> _cachedComponents;
+        
+        public int Count => targetComponents.Count;
+        public IReadOnlyList<Component> TargetComponents => targetComponents;
+        public IEnumerable<TInterface> Targets
+        {
+            get 
+            {
+                foreach (var target in targetComponents)
+                {
+                    if (target == null)
+                        continue;
+                    
+                    if (target is TInterface)
+                        yield return target as TInterface;
+                    else
+                        yield return target.GetComponent<TInterface>();
+                    
+                }
             }
         }
+        
+        public List<TInterface> ToList()
+        {
+            if (_cachedComponents == null)
+            {
+                _cachedComponents = new List<TInterface>();
+                foreach (var target in targetComponents)
+                {
+                    if (target == null)
+                        continue;
+                    
+                    if (target is TInterface)
+                        _cachedComponents.Add(target as TInterface);
+                    else
+                        _cachedComponents.Add(target.GetComponent<TInterface>());
+                }
+            }
 
-        #region Validation and Normalization
-        private bool ValidateInput(List<Component> values, ref string errorMessage) {
+            return _cachedComponents;
+        }
+
+        public bool ValidateInput()
+        {
             NormalizeInput();
             
-            foreach (var target in values) {
-                if (target == null) {
-                    errorMessage = "All targets must be assigned";
-                    return false;
-                }
-
-                if (target != null && !target.TryGetComponent(out TInterface _)) {
-                    errorMessage = "All targets must have a component of type " + typeof(TInterface).Name;
+            foreach (var target in targetComponents)
+            {
+                if (target == null || !target.TryGetComponent(out TInterface _))
+                {
                     return false;
                 }
             }
@@ -52,16 +66,21 @@ namespace DGP.InterfaceTargets
             return true;
         }
         
-        private void NormalizeInput() {
-            for (int i = 0; i < targetEmitters.Count; i++) {
-                if (targetEmitters[i] == null)
+        private void NormalizeInput()
+        {
+            for (int i = 0; i < targetComponents.Count; i++)
+            {
+                if (targetComponents[i] == null)
                     continue;
                 
-                var component = targetEmitters[i].GetComponent<TInterface>();
+                if (targetComponents[i] is TInterface)
+                    continue;
+                
+                var component = targetComponents[i].GetComponent<TInterface>();
                 if (component != null)
-                    targetEmitters[i] = component as Component;
+                    targetComponents[i] = component as Component;
             }
         }
-        #endregion
+
     }
 }

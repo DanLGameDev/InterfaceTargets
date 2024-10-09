@@ -1,24 +1,22 @@
 using System;
-using Sirenix.OdinInspector;
 using UnityEngine;
 
 namespace DGP.InterfaceTargets
 {
     [Serializable]
-    public class InterfaceTarget<TInterface>
+    public class InterfaceTarget<TInterface> where TInterface : class
     {
-        [ValidateInput(nameof(ValidateInput))]
         [SerializeField] private Component target;
-        public Component TargetComponent => target;
-        public TInterface Target => GetTargetOrNull();
         
-        private bool isCached;
-        private TInterface cachedComponent;
+        public Component TargetComponent => target;
+        public TInterface Target => GetCachedTarget();
+        
+        private TInterface _cachedInterface;
         
         public static implicit operator TInterface(InterfaceTarget<TInterface> target) => target.Target; 
         
         public bool TryGetTarget(out TInterface targetInterface) {
-            targetInterface = GetTargetOrNull();
+            targetInterface = GetCachedTarget();
             return targetInterface != null;
         }
         
@@ -27,44 +25,31 @@ namespace DGP.InterfaceTargets
             return component != null;
         }
         
-        private TInterface GetTargetOrNull() {
-            if (target == null)
-                return default;
-            
-            if (isCached)
-                return cachedComponent;
-            
-            cachedComponent = target.GetComponent<TInterface>();
-            isCached = true;
-            
-            return cachedComponent;
+        private TInterface GetCachedTarget()
+        {
+            if (target == null) return null;
+            return _cachedInterface ??= target as TInterface ?? target.GetComponent<TInterface>();
         }
         
-        private bool ValidateInput(Component value, ref string errorMessage) {
+        public bool ValidateInput()
+        {
+            if (target == null)
+            {
+                return false;
+            }
+            
             NormalizeInput();
-            
-            if (value == null) {
-                errorMessage = "All targets must be assigned";
-                return false;
-            }
-
-            if (value != null && !target.TryGetComponent(out TInterface _)) {
-                errorMessage = "All targets must have a component of type " + typeof(TInterface).Name;
-                return false;
-            }
-            
-            return true;
+            return target is TInterface || target.TryGetComponent(out TInterface _);
         }
         
         private void NormalizeInput() {
-            if (target == null)
-                return;
-
-            if (target is TInterface)
-                return;
+            if (target == null) return;
+            if (target is TInterface) return;
             
             if (target.TryGetComponent<TInterface>(out var component))
                 target = component as Component;
         }
+
+        
     }
 }
