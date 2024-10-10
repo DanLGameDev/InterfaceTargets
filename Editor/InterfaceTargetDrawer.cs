@@ -1,9 +1,11 @@
+using System;
 using UnityEngine;
 using UnityEditor;
 
 namespace DGP.InterfaceTargets.Editor
 {
     [CustomPropertyDrawer(typeof(InterfaceTarget<>))]
+    //[CustomPropertyDrawer(typeof(RequireTargetAttribute))]
     public class InterfaceTargetDrawer : PropertyDrawer
     {
         private const float ErrorBoxHeight = 40f;
@@ -14,14 +16,18 @@ namespace DGP.InterfaceTargets.Editor
             EditorGUI.BeginProperty(position, label, property);
 
             var targetProp = property.FindPropertyRelative("target");
-            var isValidProp = property.FindPropertyRelative("isValid");
 
+            var info = fieldInfo.GetCustomAttributes(typeof(RequireTargetAttribute), false);
+            bool isRequired = info.Length > 0 && ((RequireTargetAttribute)info[0]).IsRequired;
+            
+            
             // Calculate rects
             Rect objectFieldRect = new Rect(position.x, position.y, position.width, EditorGUIUtility.singleLineHeight);
             Rect errorBoxRect = new Rect(position.x, position.y + EditorGUIUtility.singleLineHeight + Padding, position.width, ErrorBoxHeight);
 
             // Draw the object field
             EditorGUI.PropertyField(objectFieldRect, targetProp, label);
+            
 
             // Validate the input
             if (targetProp.objectReferenceValue != null)
@@ -29,9 +35,7 @@ namespace DGP.InterfaceTargets.Editor
                 var interfaceTargetObject = fieldInfo.GetValue(property.serializedObject.targetObject);
                 var validateMethod = interfaceTargetObject.GetType().GetMethod("ValidateInput");
                 bool isValid = (bool)validateMethod.Invoke(interfaceTargetObject, null);
-
-                isValidProp.boolValue = isValid;
-
+                
                 if (!isValid)
                 {
                     EditorGUI.HelpBox(
@@ -40,20 +44,43 @@ namespace DGP.InterfaceTargets.Editor
                         MessageType.Error
                     );
                 }
+            } else if (isRequired)
+            {
+                EditorGUI.HelpBox(
+                    errorBoxRect,
+                    "This field is required",
+                    MessageType.Error
+                );
             }
 
             EditorGUI.EndProperty();
         }
+        
+        private bool HasError(SerializedProperty property)
+        {
+            var info = fieldInfo.GetCustomAttributes(typeof(RequireTargetAttribute), false);
+            bool isRequired = info.Length > 0 && ((RequireTargetAttribute)info[0]).IsRequired;
+            
+            var targetProp = property.FindPropertyRelative("target");
+            
+            var interfaceTargetObject = fieldInfo.GetValue(property.serializedObject.targetObject);
+            var validateMethod = interfaceTargetObject.GetType().GetMethod("ValidateInput");
+            
+            bool hasValidValue = (bool)validateMethod.Invoke(interfaceTargetObject, null);
+            
+            if (isRequired && targetProp.objectReferenceValue == null)
+                return true;
+            
+            if (!isRequired && targetProp.objectReferenceValue == null)
+                return false;
+            
+            return !hasValidValue;
+        }
 
         public override float GetPropertyHeight(SerializedProperty property, GUIContent label)
         {
-            var targetProp = property.FindPropertyRelative("target");
-            var isValidProp = property.FindPropertyRelative("isValid");
-
-            if (targetProp.objectReferenceValue != null && !isValidProp.boolValue)
-            {
+            if (HasError(property))
                 return EditorGUIUtility.singleLineHeight + ErrorBoxHeight + Padding * 2;
-            }
 
             return EditorGUIUtility.singleLineHeight;
         }

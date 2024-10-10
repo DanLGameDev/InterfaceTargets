@@ -1,25 +1,24 @@
 using System;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.Serialization;
 
 namespace DGP.InterfaceTargets
 {
     [Serializable]
     public class InterfaceTargets<TInterface> where TInterface : class
     {
-        [SerializeField] private List<Component> targetComponents = new List<Component>();
+        [SerializeField] private List<Component> targets = new List<Component>();
 
-        private List<TInterface> _cachedComponents;
-
-        private bool _isValid;
+        [NonSerialized] private List<TInterface> _cachedInterfaces;
         
-        public int Count => targetComponents.Count;
-        public IReadOnlyList<Component> TargetComponents => targetComponents;
+        public IReadOnlyList<Component> TargetComponents => targets;
+        public int Count => targets.Count;
         public IEnumerable<TInterface> Targets
         {
             get 
             {
-                foreach (var target in targetComponents)
+                foreach (var target in targets)
                 {
                     if (target == null)
                         continue;
@@ -35,29 +34,29 @@ namespace DGP.InterfaceTargets
         
         public List<TInterface> ToList()
         {
-            if (_cachedComponents == null)
+            if (_cachedInterfaces == null)
             {
-                _cachedComponents = new List<TInterface>();
-                foreach (var target in targetComponents)
+                _cachedInterfaces = new List<TInterface>();
+                foreach (var target in targets)
                 {
                     if (target == null)
                         continue;
                     
                     if (target is TInterface)
-                        _cachedComponents.Add(target as TInterface);
+                        _cachedInterfaces.Add(target as TInterface);
                     else
-                        _cachedComponents.Add(target.GetComponent<TInterface>());
+                        _cachedInterfaces.Add(target.GetComponent<TInterface>());
                 }
             }
 
-            return _cachedComponents;
+            return _cachedInterfaces;
         }
 
         public bool ValidateInput()
         {
             NormalizeInput();
             
-            foreach (var target in targetComponents)
+            foreach (var target in targets)
             {
                 if (target == null || !target.TryGetComponent(out TInterface _))
                 {
@@ -70,17 +69,17 @@ namespace DGP.InterfaceTargets
         
         private void NormalizeInput()
         {
-            for (int i = 0; i < targetComponents.Count; i++)
+            for (int i = 0; i < targets.Count; i++)
             {
-                if (targetComponents[i] == null)
+                if (targets[i] == null)
                     continue;
                 
-                if (targetComponents[i] is TInterface)
+                if (targets[i] is TInterface)
                     continue;
                 
-                var component = targetComponents[i].GetComponent<TInterface>();
+                var component = targets[i].GetComponent<TInterface>();
                 if (component != null)
-                    targetComponents[i] = component as Component;
+                    targets[i] = component as Component;
             }
         }
 
