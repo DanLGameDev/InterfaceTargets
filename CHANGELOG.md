@@ -1,5 +1,10 @@
 # Changelog
 
+## [1 2.0] - 2024-10-11
+### Changes
+- Custom drawers prevent incorrect drag and drop
+- RequireTarget attribute will not allow null values
+
 ## [1.1.1] - 2024-10-09
 ### Changes
 - Misc changes/code formatting

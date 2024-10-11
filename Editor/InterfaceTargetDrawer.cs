@@ -22,12 +22,9 @@ namespace DGP.InterfaceTargets.Editor
             // Calculate rects
             Rect objectFieldRect = new Rect(position.x, position.y, position.width, EditorGUIUtility.singleLineHeight);
             Rect errorBoxRect = new Rect(position.x, position.y + EditorGUIUtility.singleLineHeight + Padding, position.width, ErrorBoxHeight);
-
-            // Draw the object field and handle custom drag and drop
-            //DrawCustomObjectField(objectFieldRect, targetProp, label, property);
+            
             EditorGUI.PropertyField(objectFieldRect, targetProp, label);
             
-            // Show error messages
             if (targetProp.objectReferenceValue == null)
             {
                 if (isRequired)
@@ -50,8 +47,8 @@ namespace DGP.InterfaceTargets.Editor
 
             EditorGUI.EndProperty();
         }
-        
-        public void DropAreaGUI(Rect dropArea, SerializedProperty property)
+
+        private void DropAreaGUI(Rect dropArea, SerializedProperty property)
         {
             Event evt = Event.current;
             switch (evt.type)
