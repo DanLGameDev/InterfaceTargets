@@ -1,20 +1,29 @@
 using System;
-using System.Linq;
-using System.Reflection;
 using UnityEngine;
+using Object = UnityEngine.Object;
 
 namespace DGP.InterfaceTargets
 {
     [Serializable]
     public class InterfaceTarget<TInterface> : ISerializationCallbackReceiver where TInterface : class
     {
-        [SerializeField] private Component target;
-        
+        [SerializeField] private object _target;
         [NonSerialized] private TInterface _cachedInterface;
         
-        public Component TargetComponent => target;
-        public TInterface Target => GetCachedTarget();
-        
+        public object TargetComponent => _target;
+
+        public TInterface Target
+        {
+            get => GetCachedTarget();
+            set {
+                if (IsValidValueForField(value)) {
+                    _target = value;
+                    _cachedInterface = null;
+                    NormalizeInput();
+                }
+            }
+        }
+
         public static implicit operator TInterface(InterfaceTarget<TInterface> field) => field.Target; 
 
         #region Accessors
@@ -25,8 +34,8 @@ namespace DGP.InterfaceTargets
         
         private TInterface GetCachedTarget()
         {
-            if (target == null) return null;
-            return _cachedInterface ??= target as TInterface ?? target.GetComponent<TInterface>();
+            if (_target == null) return null;
+            return _cachedInterface ??= _target as TInterface ?? (_target is Component cTarget ? cTarget.GetComponent<TInterface>() : null);
         }
         #endregion
         
@@ -34,16 +43,18 @@ namespace DGP.InterfaceTargets
             if (value == null) return true;
             if (value is TInterface) return true;
             if (value is Component component) return component.TryGetComponent<TInterface>(out _);
+            
             return false;
         }
-            
         
         public void NormalizeInput() {
-            if (target == null) return;
-            if (target is TInterface) return;
-            
-            if (target.TryGetComponent<TInterface>(out var component))
-                target = component as Component;
+            if (_target == null) return;
+            if (_target is TInterface) return;
+
+            if (_target is Component tComponent && tComponent.TryGetComponent<TInterface>(out TInterface component)) {
+                _target = component;
+                _cachedInterface = component;
+            }
         }
 
         #region Serialization
