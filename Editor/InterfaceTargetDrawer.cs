@@ -11,6 +11,14 @@ namespace DGP.InterfaceTargets.Editor
         private const float ErrorBoxHeight = 40f;
         private const float Padding = 2f;
 
+        private Rect objectFieldRect;
+        private Rect errorBoxRect;
+        
+        static InterfaceTargetDrawer()
+        {
+            EditorApplication.update += () => { };
+        }
+
         public override void OnGUI(Rect position, SerializedProperty property, GUIContent label)
         {
             DropAreaGUI(position, property);
@@ -19,9 +27,18 @@ namespace DGP.InterfaceTargets.Editor
             var targetProp = property.FindPropertyRelative("target");
             var isRequired = Attribute.IsDefined(fieldInfo, typeof(RequireTargetAttribute));
             
+            if (targetProp.objectReferenceValue is GameObject gameObject)
+            {
+                if (IsValidTarget(property, gameObject, out var validObject))
+                {
+                    targetProp.objectReferenceValue = validObject;
+                    property.serializedObject.ApplyModifiedProperties();
+                }
+            }
+            
             // Calculate rects
-            Rect objectFieldRect = new Rect(position.x, position.y, position.width, EditorGUIUtility.singleLineHeight);
-            Rect errorBoxRect = new Rect(position.x, position.y + EditorGUIUtility.singleLineHeight + Padding, position.width, ErrorBoxHeight);
+            objectFieldRect = new Rect(position.x, position.y, position.width, EditorGUIUtility.singleLineHeight);
+            errorBoxRect = new Rect(position.x, position.y + EditorGUIUtility.singleLineHeight + Padding, position.width, ErrorBoxHeight);
             
             EditorGUI.PropertyField(objectFieldRect, targetProp, label);
             
@@ -61,12 +78,19 @@ namespace DGP.InterfaceTargets.Editor
                     Object draggedObject = DragAndDrop.objectReferences[0];
 
                     var isValidTarget = IsValidTarget(property, draggedObject, out var validObject);
-                    if (!isValidTarget)
-                    {
+                    
+                    if (!isValidTarget) {
                         DragAndDrop.visualMode = DragAndDropVisualMode.Rejected;
-                        return;
+                    } else {
+                        DragAndDrop.visualMode = DragAndDropVisualMode.Link;
+                        
+                        if (evt.type == EventType.DragPerform) {
+                            var targetProp = property.FindPropertyRelative("target");
+                            targetProp.objectReferenceValue = validObject;
+                            property.serializedObject.ApplyModifiedProperties();
+                        }
                     }
-                    DragAndDrop.visualMode = DragAndDropVisualMode.Link;
+                    
                     break;
             }
         }

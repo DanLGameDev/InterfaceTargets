@@ -1,18 +1,15 @@
 using System;
 using System.Collections.Generic;
 using UnityEngine;
+using Object = UnityEngine.Object;
 
 namespace DGP.InterfaceTargets
 {
     [Serializable]
-    public class InterfaceTargets<TInterface> : ISerializationCallbackReceiver where TInterface : class
+    public sealed class InterfaceTargets<TInterface> where TInterface : class
     {
-        [SerializeField] private List<Component> targets = new List<Component>();
-
-        [NonSerialized] private List<TInterface> _cachedInterfaces;
-        
-        public IReadOnlyList<Component> TargetComponents => targets;
-        public int Count => targets.Count;
+        [SerializeField] private List<Object> targets = new();
+        public IReadOnlyList<Object> TargetComponents => targets;
 
         public IEnumerable<TInterface> Targets
         {
@@ -20,78 +17,31 @@ namespace DGP.InterfaceTargets
             {
                 foreach (var target in targets)
                 {
-                    if (target == null) continue;
-                    yield return target as TInterface ?? target.GetComponent<TInterface>();
+                    if (IsValidValue(target, out var interfaceTarget))
+                        yield return interfaceTarget;
                 }
             }
         }
-        
-        public List<TInterface> ToList()
-        {
-            if (_cachedInterfaces == null)
-            {
-                _cachedInterfaces = new List<TInterface>();
-                foreach (var target in targets)
-                {
-                    if (target == null) continue;
-                    _cachedInterfaces.Add(target as TInterface ?? target.GetComponent<TInterface>());
-                }
-            }
 
-            return _cachedInterfaces;
-        }
-
-        public bool ValidateAndNormalizeInput()
+        public bool IsValidValue(Object value, out TInterface target) 
         {
-            bool isValid = true;
-            for (int i = 0; i < targets.Count; i++)
-            {
-                if (targets[i] == null)
-                {
-                    isValid = false;
-                    continue;
-                }
-                
-                if (targets[i] is TInterface) continue;
-                
-                var component = targets[i].GetComponent<TInterface>();
-                if (component != null)
-                    targets[i] = component as Component;
-                else
-                    isValid = false;
+            if (value == null) {
+                target = null;
+                return true;
             }
             
-            return isValid;
-        }
+            if (value is TInterface interfaceTarget) {
+                target = interfaceTarget;
+                return true;
+            }
 
-        public bool TryGetTarget(int index, out TInterface targetInterface)
-        {
-            targetInterface = default;
-            if (index < 0 || index >= targets.Count) return false;
+            if (value is GameObject gameObject) {
+                target = gameObject.GetComponent<TInterface>();
+                return target != null;
+            }
             
-            var target = targets[index];
-            if (target == null) return false;
-            
-            targetInterface = target as TInterface ?? target.GetComponent<TInterface>();
-            return targetInterface != null;
-        }
-
-        public bool IsValidValueForField(object value)
-        {
-            if (value == null) return true;
-            if (value is TInterface) return true;
-            if (value is Component component) return component.TryGetComponent<TInterface>(out _);
+            target = null;
             return false;
-        }
-
-        public void OnBeforeSerialize()
-        {
-            // No operation needed
-        }
-
-        public void OnAfterDeserialize()
-        {
-            _cachedInterfaces = null;
         }
     }
 }

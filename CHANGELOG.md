@@ -1,4 +1,7 @@
 # Changelog
+## [1.4.0] - 2024-11-03
+### Changes
+- Now supports dropping GameObjects, components and scriptable objects
 
 ## [1 2.0] - 2024-10-11
 ### Changes
